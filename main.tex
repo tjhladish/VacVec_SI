@@ -1,0 +1,55 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+
+\title{Synthetic Population Yucatan - Pipeline}
+\author{}
+\date{September 2018}
+
+\begin{document}
+
+\section{Data}
+\begin{itemize}
+\item Yucatan schools information
+    \begin{itemize}
+        \item Source:
+        \item Description: Data table containing names, addresses, localities and municipalities of 3290
+        schools
+        \item Usage: To generate schools coordinates
+    \end{itemize}
+\item Nighttime light raster - VIIRS Day/Night Band Nighttime Lights
+    \begin{itemize}
+        \item Source: Earth Observation Group, NOAA \url{https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html}
+        \item Description: Annual composites of the Visible Infrared Imaging Radiometer Suite (VIIRS) Day/Night Band (DNB) radiance in 2015. Data provider has removed the outliers, screened out the ephemeral lights and set the background (non-lights) to zero.
+        \item Usage: As a proxy to human activities and population -- Schools are more likely to locate at places with higher nighttime light. 
+    \end{itemize}
+\item Localities and municipalities shapefiles
+    \begin{itemize}
+        \item Source: Mexican population and housing census 2010, provided by Instituto Nacional de Estadística y Geografía (INEGI) via Sistema para la Consulta de Información Censal (SCINCE)
+        \item Description: INEGI has provided shapefiles of the 106 municipalities of Yucatan and the localities within them. For urban localities, polygons are provided; for rural localities, only points are provided.
+        \item Usage: Random allocation of schools coordinates -- localities and municipalities of schools that cannot be geocoded are matched with these shapefiles.
+        \item Additional references:  \href{http://www.inegi.org.mx/est/scince/scince2010.aspx?_file=/est/scince/scince2010/Scince2010_31.exe&idusr=80085%22%20-o%20yuc_scince.exe} {Download links (in .exe)}
+        and \href{https://blog.diegovalle.net/2013/06/shapefiles-of-mexico-agebs-manzanas-etc.html}{more information.}
+    \end{itemize}
+\end{itemize}
+
+\section{School coordinates}
+The geographic coordinates for the 3290 schools were determined using following steps:
+\begin{enumerate}
+    \item We use the Google Map's Geocoding API to convert the school addresses to coordinates. 1374 schools could be geocoded.
+    \item For the rest of the 1916 schools, we match each of their locality and municipality with the SCINCE shapefiles.
+    \item There were 1867 schools with matching polygons (urban) or points (rural), 53 of which had more than one match. The following steps were taken:
+    \begin{itemize}
+        \item For each urban polygon, all pixels within the polygon were selected.
+        \item For each rural points, all pixels (a) within the 5km distance from the point, (b) within the municipality, and (c) not belong to an urban polygon were selected.
+        \item Randomly sample one out of all selected pixels, with probability of selection weighted by the pixels' nighttime light value.
+        \item Assign the coordinates of the pixel to the school.
+    \end{itemize}
+    \item For the 49 schools of which locality could not be matched with the shapefiles:
+    \begin{itemize}
+        \item Select all pixels within the municipality's polygons that do not belong to an urban polygon (i.e. assuming the school is not in urban area).
+        \item Randomly sample one out of all selected pixels, with probability of selection weighted by the pixels' nighttime light value.
+        \item Assign the coordinates of the pixel to the school.
+    \end{itemize}
+\end{enumerate}  
+\end{document}
